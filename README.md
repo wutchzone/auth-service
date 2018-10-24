@@ -1,0 +1,6 @@
+# Auth service
+
+# Routes
+```
+
+```
