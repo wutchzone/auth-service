@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/wutchzone/auth-service/pkg/user"
@@ -26,22 +27,25 @@ func InitRoutes() *chi.Mux {
 	r.Route("/api", func(r chi.Router) {
 		// Make authorozation for correct privilegies
 		r.Use(Authorize)
+		r.Group(func(r chi.Router) {
+			r.Use(Authentize)
+			// Attach routes from config files
+			for _, e := range Config.API {
+				r.Get(e.From, func(w http.ResponseWriter, r *http.Request) {
+					Redirect(w, r, e.To)
+				})
+				r.Post(e.From, func(w http.ResponseWriter, r *http.Request) {
+					Redirect(w, r, e.To)
+				})
+				r.Delete(e.From, func(w http.ResponseWriter, r *http.Request) {
+					Redirect(w, r, e.To)
+				})
+				r.Put(e.From, func(w http.ResponseWriter, r *http.Request) {
+					Redirect(w, r, e.To)
+				})
 
-		// Attach routes from config files
-		for _, e := range Config.API {
-			r.Get(e.From, func(w http.ResponseWriter, r *http.Request) {
-				Redirect(w, r, e.To)
-			})
-			r.Post(e.From, func(w http.ResponseWriter, r *http.Request) {
-				Redirect(w, r, e.To)
-			})
-			r.Delete(e.From, func(w http.ResponseWriter, r *http.Request) {
-				Redirect(w, r, e.To)
-			})
-			r.Put(e.From, func(w http.ResponseWriter, r *http.Request) {
-				Redirect(w, r, e.To)
-			})
-		}
+			}
+		})
 
 		r.Route("/user", func(r chi.Router) {
 			// Make authorozation for correct privilegies
@@ -64,7 +68,8 @@ func InitRoutes() *chi.Mux {
 // CheckIfAdminOrUser checks for correct ptivilegies
 func CheckIfAdminOrUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := chi.URLParam(r, "name")
+		url := strings.Split(r.URL.String(), "/")
+		n := url[len(url)-1]
 		uid := r.Header.Get("X-UUID")
 
 		// Check if UUID is in session DB
@@ -86,6 +91,9 @@ func CheckIfAdminOrUser(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		if sn == n {
+			next.ServeHTTP(w, r)
+		}
 		if u.Role < user.Admin {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -99,19 +107,42 @@ func CheckIfAdminOrUser(next http.Handler) http.Handler {
 func Authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check authorization
-
 		uid := r.Header.Get("X-UUID")
-		id := r.Header.Get("X-USERNAME")
 
-		st, _ := session.GetRecord(id)
-
-		if st != uid {
+		st, _ := session.GetRecord(uid)
+		if st == "" {
 			sendError(w, "Invalid token or you must log in first", http.StatusUnauthorized)
 			return
 		}
 		//ctx := context.WithValue(r.Context(), "UUID", uuid)
 
 		next.ServeHTTP(w, r) //r.WithContext(ctx))
+	})
+}
+
+// Authentize that user has correct role for accesing the route
+func Authentize(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uid := r.Header.Get("X-UUID")
+		st, _ := session.GetRecord(uid)
+		u, err := userdb.GetUser(st)
+
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+
+		for _, i := range Config.API {
+			if "/api/"+i.From == r.URL.String() {
+				if i.Privilegies <= u.Role {
+					next.ServeHTTP(w, r)
+				} else {
+					w.WriteHeader(http.StatusUnauthorized)
+				}
+				break
+			}
+		}
+
+		w.WriteHeader(http.StatusNotFound)
 	})
 }
 

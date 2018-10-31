@@ -2,30 +2,22 @@
     "api": [
         {
             "from": "/test/test/test",
-            "to": "test/test",
+            "to": "/test/test",
             "privilegies": 20
         },
         {
             "from": "/test/test/test2",
-            "to": "test/test2",
+            "to": "/test/test2",
             "privilegies": 10
         }
     ],
-    "global": {
-        "port": 7080,
-        "availableMethods": [
-            "POST",
-            "GET"
-        ]
-    },
+    "port": 7080,
     "userdb": {
-        "address": "localhost:8888",
-        "password": "test",
-        "DB": 0
+        "address": "localhost:7000",
+        "password": ""
     },
-    "redis": {
-        "address": "localhost:8888",
-        "password": "test",
-        "DB": 0
+    "sessiondb": {
+        "address": "localhost:7000",
+        "password": ""
     }
 }

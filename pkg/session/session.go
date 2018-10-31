@@ -27,12 +27,31 @@ func initRedis(addr string, pswd string) error {
 
 // SetRecord to the redis, you can choose between persistent record (duration 0) and timed record (duration > 0)
 func SetRecord(key string, value string, time time.Duration) error {
-	return client.Set(key, value, 0).Err()
+	var err error
+	err = client.Set(key, value, 0).Err()
+	if err != nil {
+		return err
+	}
+	err = client.Set(value, key, 0).Err()
+	return err
 }
 
 // RemoveRecord from the redis
 func RemoveRecord(key string) error {
-	return client.Del(key).Err()
+	var err error
+	r, err := GetRecord(key)
+
+	if err != nil {
+		return err
+	}
+
+	err = client.Del(key).Err()
+	if err != nil {
+		return err
+	}
+
+	err = client.Del(r).Err()
+	return err
 }
 
 // GetRecord from the redis
