@@ -57,5 +57,10 @@ func RemoveRecord(key string) error {
 // GetRecord from the redis
 func GetRecord(key string) (string, error) {
 	r := client.Get(key)
-	return r.Val(), r.Err()
+
+	if r.Err() != nil {
+
+		return "", r.Err()
+	}
+	return r.Val(), nil
 }

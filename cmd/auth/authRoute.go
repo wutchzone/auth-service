@@ -31,8 +31,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save user to sessionDB
-	uid := r.Header.Get("X-UUID")
-	_, errSession := session.GetRecord(uid)
+	uid, errSession := session.GetRecord(u.Name)
 	if errSession != nil {
 		uuid, _ := uuid.NewUUID()
 		uid = uuid.String()
