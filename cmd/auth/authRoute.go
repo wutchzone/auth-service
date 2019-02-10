@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/wutchzone/auth-service/pkg/session"
+	"github.com/wutchzone/auth-service/pkg/sessiondb"
 
 	"github.com/google/uuid"
 	"github.com/wutchzone/auth-service/api"
 	"github.com/wutchzone/auth-service/pkg/user"
-	"github.com/wutchzone/auth-service/pkg/userdb"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 )
 
 // HandleLogin route
@@ -24,18 +24,18 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if user exists in userDB
-	cu, errSearch := userdb.GetUser((*u).Name)
+	cu, errSearch := accountdb.GetUser((*u).Name)
 	if errSearch != nil || cu.ComparePswdAndHash((*u).Password) != nil {
 		sendError(w, "User name or password is invalid", http.StatusUnauthorized)
 		return
 	}
 
 	// Save user to sessionDB
-	uid, errSession := session.GetRecord(u.Name)
+	uid, errSession := sessiondb.GetRecord(u.Name)
 	if errSession != nil {
 		uuid, _ := uuid.NewUUID()
 		uid = uuid.String()
-		session.SetRecord(uid, cu.Username, 20*time.Minute)
+		sessiondb.SetRecord(uid, cu.Username, 20*time.Minute)
 	}
 	// Return UUID
 	json, _ := json.Marshal(parser.UUIDJSON{
@@ -61,7 +61,7 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handler saving user to DB
-	errSave := userdb.SaveUser(*cu)
+	errSave := accountdb.SaveUser(*cu)
 	if errSave != nil {
 		sendError(w, errCreate.Error(), http.StatusInternalServerError)
 		return
@@ -103,7 +103,7 @@ func createNewUser(u *parser.UserJSON) (*user.User, error) {
 
 // checkIfUserExists in User DB
 func checkIfUserExists(usr *parser.UserJSON) error {
-	u, _ := userdb.GetUser(usr.Name)
+	u, _ := accountdb.GetUser(usr.Name)
 
 	if u != nil {
 		return errors.New("User already exists")

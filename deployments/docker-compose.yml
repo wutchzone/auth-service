@@ -1,0 +1,7 @@
+version: '3'
+services:
+  db:
+    hostname: "mongo"
+    image: "mongo"
+    expose:
+      - "27018:27018"

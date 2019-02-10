@@ -7,12 +7,12 @@ import (
 	"github.com/wutchzone/auth-service/pkg/user"
 
 	"github.com/go-chi/chi"
-	"github.com/wutchzone/auth-service/pkg/userdb"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 )
 
 // HandleUserGet
 func HandleUserGet(w http.ResponseWriter, r *http.Request) {
-	u, err := userdb.GetUser(chi.URLParam(r, "name"))
+	u, err := accountdb.GetUser(chi.URLParam(r, "name"))
 	if err != nil {
 		sendError(w, "User does not exist", http.StatusBadRequest)
 		return
@@ -27,7 +27,7 @@ func HandleUserGet(w http.ResponseWriter, r *http.Request) {
 func HandleUserPut(w http.ResponseWriter, r *http.Request) {
 	du, _ := decodeUser(r)
 
-	u, err := userdb.GetUser(chi.URLParam(r, "name"))
+	u, err := accountdb.GetUser(chi.URLParam(r, "name"))
 	if err != nil {
 		sendError(w, "User does not exist", http.StatusBadRequest)
 		return
@@ -44,5 +44,5 @@ func HandleUserPut(w http.ResponseWriter, r *http.Request) {
 		u.Role = du.Role
 	}
 
-	userdb.SaveUser(*u)
+	accountdb.SaveUser(*u)
 }

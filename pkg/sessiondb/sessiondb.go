@@ -1,4 +1,4 @@
-package session
+package sessiondb
 
 import (
 	"time"
@@ -8,7 +8,7 @@ import (
 
 var client *redis.Client
 
-// NewSession returns pointer to the new session
+// NewSession returns pointer to the new sessiondb
 func NewSession(addr string, pswd string) error {
 	return initRedis(addr, pswd)
 }

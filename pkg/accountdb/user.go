@@ -1,4 +1,4 @@
-package user
+package accountdb
 
 import (
 	"errors"
@@ -8,35 +8,24 @@ import (
 
 // User struct
 type User struct {
-	Username string
-	Password string
-	Email    string
-	Role     Role
+	Username string `bson:"name",json:"name"`
+	Password string `bson:"password",json:"-"`
+	Email    string `bson:"email",json:"email"`
+	Role     string `bson:"role",json:"role"`
 }
 
-// Role enum for available roles
-type Role int
-
-const (
-	Default      Role = 0
-	DefaultUser  Role = 10
-	ModerateUser Role = 20
-	Admin        Role = 30
-	SuperAdmin   Role = 40
-)
-
 // NewUser instance
-func NewUser(name string, password string, email string, role Role) (*User, error) {
+func NewUser(name string, password string, email string, role string) (*User, error) {
 	hashedPswd, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if name == "" {
-		return nil, errors.New("Name is too short")
+		return nil, errors.New("Name is not valid.")
 	}
-	if password == "" {
-		return nil, errors.New("Password is too short")
+	if len(password) < 6 {
+		return nil, errors.New("Password is too short, 6 characters are required.")
 	}
 	if email == "" {
-		return nil, errors.New("Email is too short")
+		return nil, errors.New("Email is not valid.")
 	}
 
 	return &User{

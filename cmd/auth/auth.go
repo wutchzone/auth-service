@@ -3,39 +3,46 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/wutchzone/auth-service/pkg/configuration"
+	"github.com/wutchzone/auth-service/pkg/sessiondb"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/wutchzone/auth-service/api"
-	"github.com/wutchzone/auth-service/pkg/session"
-	"github.com/wutchzone/auth-service/pkg/userdb"
 )
 
 // Config is reference for service configuration
-var Config *parser.ConfigJSON
+var Config *configuration.Configuration
 
 func init() {
+	// Check if config file was passed
+	if len(os.Args) == 1 {
+		panic("Configuration file was not specified as an argument")
+	}
+
+	// Read config file
 	f, err := ioutil.ReadFile(os.Args[len(os.Args)-1])
 	if err != nil {
-		fmt.Println("Can not read file", f)
-	}
-	json.NewDecoder(strings.NewReader(string(f))).Decode(&Config)
-
-	errUserDB := userdb.NewSession(Config.Userdb.Address, Config.Userdb.Password)
-	if errUserDB != nil {
-		fmt.Println("Error connecting to the UserDB: ", errUserDB)
-		return
+		panic("Can not read configuration file")
 	}
 
-	errSessionDB := session.NewSession(Config.Sessiondb.Address, Config.Sessiondb.Password)
-	if errSessionDB != nil {
-		fmt.Println("Error connecting to the SessionDB: ", errSessionDB)
-		return
+	// Parse configuration file
+	if err := json.NewDecoder(strings.NewReader(string(f))).Decode(&Config); err != nil {
+		panic("Configuration file is badly formatted")
 	}
 
-	fmt.Println("Everything started succesfully.")
+	// Init account DB
+	if err := accountdb.NewSession(Config.AccountDB.URL, Config.Userdb.Password); err != nil {
+		panic("Error connecting to the account DB")
+	}
+
+	// Init sessiondb DB
+	if err := sessiondb.NewSession(Config.Sessiondb.Address, Config.Sessiondb.Password); err != nil {
+		panic("Error connecting to the sessiondb DB")
+	}
+
+	fmt.Println("Everything started!")
 }
 
 func main() {

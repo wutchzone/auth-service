@@ -8,9 +8,9 @@ import (
 
 	"github.com/wutchzone/auth-service/pkg/user"
 
-	"github.com/wutchzone/auth-service/pkg/session"
+	"github.com/wutchzone/auth-service/pkg/sessiondb"
 
-	"github.com/wutchzone/auth-service/pkg/userdb"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -72,8 +72,8 @@ func CheckIfAdminOrUser(next http.Handler) http.Handler {
 		n := url[len(url)-1]
 		uid := r.Header.Get("X-UUID")
 
-		// Check if UUID is in session DB
-		sn, errSession := session.GetRecord(uid)
+		// Check if UUID is in sessiondb DB
+		sn, errSession := sessiondb.GetRecord(uid)
 		if errSession != nil {
 			sendError(w, "Invalid UUID", http.StatusBadRequest)
 			return
@@ -86,7 +86,7 @@ func CheckIfAdminOrUser(next http.Handler) http.Handler {
 		}
 
 		// Check if user is admin
-		u, errUserdb := userdb.GetUser(n)
+		u, errUserdb := accountdb.GetUser(n)
 		if errUserdb != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -109,7 +109,7 @@ func Authorize(next http.Handler) http.Handler {
 		// Check authorization
 		uid := r.Header.Get("X-UUID")
 
-		st, _ := session.GetRecord(uid)
+		st, _ := sessiondb.GetRecord(uid)
 		if st == "" {
 			sendError(w, "Invalid token or you must log in first", http.StatusUnauthorized)
 			return
@@ -124,8 +124,8 @@ func Authorize(next http.Handler) http.Handler {
 func Authentize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uid := r.Header.Get("X-UUID")
-		st, _ := session.GetRecord(uid)
-		u, err := userdb.GetUser(st)
+		st, _ := sessiondb.GetRecord(uid)
+		u, err := accountdb.GetUser(st)
 
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
