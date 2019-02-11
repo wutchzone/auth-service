@@ -2,9 +2,9 @@ package accountdb
 
 import (
 	"context"
+	"errors"
 	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/mongo"
-	"github.com/pkg/errors"
 )
 
 type DB struct {
@@ -38,7 +38,7 @@ func NewAccountDBConnection(addr string, table string, defaultCollection string)
 }
 
 // GetUser from DB
-func (d *DB) GetAccount(name string) (*User, error) {
+func (d *DB) getAccount(name string) (*User, error) {
 	var u User
 
 	r := d.db.Collection(d.defaultCollectionName).FindOne(nil, bson.M{"name": name})
@@ -51,14 +51,26 @@ func (d *DB) GetAccount(name string) (*User, error) {
 }
 
 //SaveUser to the DB
-func (d *DB) SaveAccount(u User) error {
-	return errors.New("")
+func (d *DB) saveAccount(u User) error {
+	if u, _ := d.getAccount(u.Username); u != nil {
+		return errors.New("User already exists.")
+	}
+
+	if _, err := d.db.Collection(d.defaultCollectionName).InsertOne(nil, u); err != nil {
+		return errors.New("Error while saving account to the DB.")
+	} else{
+		return nil
+	}
+
 }
 
-func (d *DB) DeleteAccount(u User) error {
-	return errors.New("")
+func (d *DB) deleteAccount(u User) error {
+	_, err := d.db.Collection(d.defaultCollectionName).DeleteOne(nil, bson.M{"name": u.Username})
+	return err
 }
 
+// Modify user's data in the DB
 func (d *DB) updateAccount(u User) error {
-	return errors.New("")
+	_, err := d.db.Collection(d.defaultCollectionName).UpdateOne(nil, bson.M{"name": u.Username}, bson.M{"$set": u})
+	return err
 }

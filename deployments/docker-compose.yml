@@ -3,5 +3,5 @@ services:
   db:
     hostname: "mongo"
     image: "mongo"
-    expose:
+    ports:
       - "27018:27018"
