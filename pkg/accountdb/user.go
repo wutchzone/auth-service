@@ -40,3 +40,7 @@ func NewUser(name string, password string, email string, role string) (*User, er
 func (u *User) ComparePswdAndHash(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte((*u).Password), []byte(password))
 }
+
+func (u *User) Name() string{
+	return u.Username
+}

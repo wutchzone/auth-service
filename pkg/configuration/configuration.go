@@ -20,10 +20,19 @@ type DB struct {
 	Table    string // Used table name
 }
 
+// DefaultUser is created when you firstly start your app. It has admin privilegies.
+// It is recommended to chanfe it to the different password.
+type DefaultUser struct {
+	Name     string "admin"
+	Password string "admin"
+}
+
 type Configuration struct {
-	DefaultPort int                        // Port where service will be listening
-	Routes      []Route `json:"routes"`    // Routes definition
-	Roles       []Role  `json:"roles"`     // Roles definition
-	SessionDB   DB      `json:"sessiondb"` // DB for storing sessiondb information (Only Redis is currently supported)
-	AccountDB   DB      `json:"accountdb"`   // Parameters for connecting to the DB where user data's are stored (Only MongoDB is currently supported)
+	DefaultPort int         `json:"default_port"` // Port where service will be listening
+	Routes      []Route     `json:"routes"`       // Routes definition
+	Roles       []Role      `json:"roles"`        // Roles definition
+	SessionDB   DB          `json:"sessiondb"`    // DB for storing sessiondb information (Only Redis is currently supported)
+	ServiceDB   DB          `json:servicedb`      // DB for storing data about services
+	AccountDB   DB          `json:"accountdb"`    // Parameters for connecting to the DB where user data's are stored (Only MongoDB is currently supported)
+	User        DefaultUser `json:"user"`         // Default admin account
 }

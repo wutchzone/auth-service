@@ -7,6 +7,10 @@ import (
 	"github.com/mongodb/mongo-go-driver/mongo"
 )
 
+type DBItem interface {
+	Name() string
+}
+
 type DB struct {
 	client                *mongo.Client
 	db                    *mongo.Database
@@ -38,39 +42,34 @@ func NewAccountDBConnection(addr string, table string, defaultCollection string)
 }
 
 // GetUser from DB
-func (d *DB) getAccount(name string) (*User, error) {
-	var u User
-
-	r := d.db.Collection(d.defaultCollectionName).FindOne(nil, bson.M{"name": name})
-
-	if err := r.Decode(&u); err != nil {
-		return nil, err
-	}
-
-	return &u, nil
+func (d *DB) GetAccount(name string) *mongo.DocumentResult {
+	return d.db.Collection(d.defaultCollectionName).FindOne(nil, bson.M{"name": name})
 }
 
 //SaveUser to the DB
-func (d *DB) saveAccount(u User) error {
-	if u, _ := d.getAccount(u.Username); u != nil {
-		return errors.New("User already exists.")
-	}
+func (d *DB) SaveAccount(u DBItem) error {
 
 	if _, err := d.db.Collection(d.defaultCollectionName).InsertOne(nil, u); err != nil {
 		return errors.New("Error while saving account to the DB.")
-	} else{
+	} else {
 		return nil
 	}
 
 }
 
-func (d *DB) deleteAccount(u User) error {
-	_, err := d.db.Collection(d.defaultCollectionName).DeleteOne(nil, bson.M{"name": u.Username})
+func (d *DB) GetAll() mongo.Cursor {
+	cursor, _ := d.db.Collection(d.defaultCollectionName).Find(nil, bson.M{})
+
+	return cursor
+}
+
+func (d *DB) DeleteAccount(u string) error {
+	_, err := d.db.Collection(d.defaultCollectionName).DeleteOne(nil, bson.M{"name": u})
 	return err
 }
 
 // Modify user's data in the DB
-func (d *DB) updateAccount(u User) error {
-	_, err := d.db.Collection(d.defaultCollectionName).UpdateOne(nil, bson.M{"name": u.Username}, bson.M{"$set": u})
+func (d *DB) UpdateAccount(u DBItem) error {
+	_, err := d.db.Collection(d.defaultCollectionName).UpdateOne(nil, bson.M{"name": u.Name()}, bson.M{"$set": u})
 	return err
 }

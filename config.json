@@ -1,23 +1,26 @@
 {
-    "api": [
-        {
-            "from": "/test/test/test",
-            "to": "/test/test",
-            "privilegies": 20
-        },
-        {
-            "from": "/test/test/test2",
-            "to": "/test/test2",
-            "privilegies": 10
-        }
-    ],
-    "port": 7080,
-    "userdb": {
-        "address": "localhost:7000",
-        "password": ""
-    },
-    "sessiondb": {
-        "address": "localhost:7000",
-        "password": ""
-    }
+  "default_port": 7080,
+  "routes": [
+  ],
+  "roles": [],
+  "sessiondb": {
+    "url": "localhost:7000",
+    "name": "",
+    "password": "",
+    "table": ""
+  },
+  "servicedb": {
+    "url": "mongodb://localhost:27017",
+    "name": "",
+    "password": "",
+    "table": "dev"
+  },
+  "accountdb": {
+    "url": "mongodb://localhost:27017",
+    "name": "",
+    "password": "",
+    "table": "dev"
+  },
+  "user": {
+  }
 }

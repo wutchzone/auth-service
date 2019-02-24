@@ -8,59 +8,48 @@ import (
 
 var client *redis.Client
 
-// NewSession returns pointer to the new sessiondb
-func NewSession(addr string, pswd string) error {
-	return initRedis(addr, pswd)
+type SessionDB struct {
+	client *redis.Client
 }
 
-func initRedis(addr string, pswd string) error {
+// NewSession returns pointer to the new sessiondb
+func NewSessionDB(addr string, pswd string, table int) (*SessionDB, error) {
 	client = redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pswd, // no password set
-		DB:       0,    // use default DB
+		DB:       table,    // use default DB
 	})
 
-	_, err := client.Ping().Result()
+	if _, err := client.Ping().Result(); err != nil {
+		return nil, err
+	}
 
-	return err
+	return &SessionDB{client: client}, nil
 }
 
 // SetRecord to the redis, you can choose between persistent record (duration 0) and timed record (duration > 0)
-func SetRecord(key string, value string, time time.Duration) error {
-	var err error
-	err = client.Set(key, value, 0).Err()
-	if err != nil {
+func (d *SessionDB) setRecord(key string, value interface{}, time time.Duration) error {
+	if err := d.client.Set(key, value, time).Err(); err != nil {
 		return err
 	}
-	err = client.Set(value, key, 0).Err()
-	return err
+	return nil
 }
 
 // RemoveRecord from the redis
-func RemoveRecord(key string) error {
-	var err error
-	r, err := GetRecord(key)
-
-	if err != nil {
+func (d *SessionDB) removeRecord(key string) error {
+	if err := d.client.Del(key).Err(); err != nil {
 		return err
 	}
-
-	err = client.Del(key).Err()
-	if err != nil {
-		return err
-	}
-
-	err = client.Del(r).Err()
-	return err
+	return nil
 }
 
 // GetRecord from the redis
-func GetRecord(key string) (string, error) {
-	r := client.Get(key)
+func (d *SessionDB) getRecord(key string) (interface{}, error) {
+	r := d.client.Get(key)
 
 	if r.Err() != nil {
 
-		return "", r.Err()
+		return nil, r.Err()
 	}
 	return r.Val(), nil
 }

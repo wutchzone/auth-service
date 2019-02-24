@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kyokomi/emoji"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"github.com/wutchzone/auth-service/pkg/configuration"
 	"github.com/wutchzone/auth-service/pkg/sessiondb"
-	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,7 +14,12 @@ import (
 )
 
 // Config is reference for service configuration
-var Config *configuration.Configuration
+var (
+	Config    *configuration.Configuration
+	UserDB    *accountdb.DB
+	ServiceDB *accountdb.DB
+	SessionDB *sessiondb.SessionDB
+)
 
 func init() {
 	// Check if config file was passed
@@ -30,16 +36,32 @@ func init() {
 	// Parse configuration file
 	if err := json.NewDecoder(strings.NewReader(string(f))).Decode(&Config); err != nil {
 		panic("Configuration file is badly formatted")
+	} else {
+		fmt.Println(emoji.Sprint(":white_check_mark: Configuration loaded succesfully"))
 	}
 
 	// Init account DB
-	if err := accountdb.NewSession(Config.AccountDB.URL, Config.Userdb.Password); err != nil {
+	if udb, err := accountdb.NewAccountDBConnection(Config.AccountDB.URL, Config.AccountDB.Table, "users"); err != nil {
 		panic("Error connecting to the account DB")
+	} else {
+		fmt.Println(emoji.Sprint(":white_check_mark: AccountDB loaded succesfully"))
+		UserDB = udb
+	}
+
+	// Init service DB
+	if sdb, err := accountdb.NewAccountDBConnection(Config.ServiceDB.URL, Config.ServiceDB.Table, "services"); err != nil {
+		panic("Error connecting to the service DB")
+	} else {
+		fmt.Println(emoji.Sprint(":white_check_mark: ServiceDB loaded succesfully"))
+		ServiceDB = sdb
 	}
 
 	// Init sessiondb DB
-	if err := sessiondb.NewSession(Config.Sessiondb.Address, Config.Sessiondb.Password); err != nil {
+	if sdb, err := sessiondb.NewSessionDB(Config.SessionDB.URL, Config.SessionDB.Password, 1); err != nil {
 		panic("Error connecting to the sessiondb DB")
+	} else {
+		fmt.Println(emoji.Sprint(":white_check_mark: SessionDB loaded succesfully"))
+		SessionDB = sdb
 	}
 
 	fmt.Println("Everything started!")
@@ -47,6 +69,6 @@ func init() {
 
 func main() {
 	r := InitRoutes()
-	fmt.Println(":" + string(Config.Port))
+
 	http.ListenAndServe(":7080", r)
 }
