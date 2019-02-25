@@ -1,7 +1,12 @@
 version: '3'
 services:
-  db:
-    hostname: "mongo"
+  mongo:
     image: "mongo"
-    ports:
+      ports:
       - "27018:27018"
+  redis:
+    image: "redis"
+    ports:
+      - "6379:6379"
+  auth:
+    build: "../build"

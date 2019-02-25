@@ -1,0 +1,31 @@
+{
+  "default_port": 7080,
+  "routes": [
+    {
+      "from": "/api/google",
+      "to": "https://google.com",
+      "level": 0
+    }
+  ],
+  "roles": [],
+  "sessiondb": {
+    "url": "localhost:7000",
+    "name": "",
+    "password": "",
+    "table": ""
+  },
+  "servicedb": {
+    "url": "mongodb://localhost:27017",
+    "name": "",
+    "password": "",
+    "table": "dev"
+  },
+  "accountdb": {
+    "url": "mongodb://localhost:27017",
+    "name": "",
+    "password": "",
+    "table": "dev"
+  },
+  "user": {
+  }
+}

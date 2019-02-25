@@ -9,9 +9,11 @@ import (
 )
 
 func handleRegisterRoute(w http.ResponseWriter, r *http.Request) {
-	ServiceDB.SaveAccount(accountdb.NewService(10))
+	service := accountdb.NewService(10)
+	ServiceDB.SaveAccount(service)
+	SessionDB.SetRecord(service.Name(), "service", 0)
 
-	w.Write([]byte("okaa"))
+	response.CreateResponse(w, response.ResponseOK, service)
 }
 
 func handleGetAllServices(w http.ResponseWriter, r *http.Request) {
@@ -38,9 +40,11 @@ func handleGetOneService(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDeleteOneService(w http.ResponseWriter, r *http.Request) {
-	if err := ServiceDB.DeleteAccount(chi.URLParam(r, "id")); err != nil {
+	id := chi.URLParam(r, "id")
+	if err := ServiceDB.DeleteAccount(id); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
+	SessionDB.RemoveRecord(id)
 }
 
 // Decodes multiple services into array

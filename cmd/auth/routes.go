@@ -20,10 +20,11 @@ func InitRoutes() *chi.Mux {
 
 	r.Route("/api", func(r chi.Router) {
 		// Check if user has enough privilegies
-		// r.Use(Authorize)
+		r.Use(Authorize)
 
 		// Redirect
 		r.Use(Redirect)
+		r.Get("/", handleHello)
 	})
 
 	r.Route("/user", func(r chi.Router) {
@@ -31,13 +32,13 @@ func InitRoutes() *chi.Mux {
 		// Because normal user can see only his profile
 		// r.Use(CheckIfAdminOrUser)
 
-		r.Get("/{name}", nil) // Display user
-		r.Put("/{name}", nil) // Update user settings
+		// r.Get("/{name}", nil) // Display user
+		// r.Put("/{name}", nil) // Update user settings
 	})
 
 	r.Route("/service", func(r chi.Router) {
 		// Check if user has enough privilegies
-		// r.Use(Authorize)
+		r.Use(Authorize)
 
 		// Register new route
 		r.Get("/", handleGetAllServices)
@@ -47,13 +48,13 @@ func InitRoutes() *chi.Mux {
 	})
 
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", nil)
-		r.Post("/login", nil)
-		r.Post("/logout", nil)
-		r.Post("/reset", nil)
+		//r.Post("/register", nil)
+		//r.Post("/login", nil)
+		//r.Post("/logout", nil)
+		//r.Post("/reset", nil)
 
 		// Send available roles
-		r.Get("/roles", nil)
+		// r.Get("/roles", nil)
 	})
 
 	return r
@@ -101,39 +102,53 @@ func handleHello(w http.ResponseWriter, _ *http.Request) {
 //	})
 //}
 //
-//// Authorize is a middleware for authorization
-//func Authorize(next http.Handler) http.Handler {
-//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		// Check authorization
-//		uid := r.Header.Get("X-UUID")
-//
-//		st, _ := sessiondb.GetRecord(uid)
-//		if st == "" {
-//			sendError(w, "Invalid token or you must log in first", http.StatusUnauthorized)
-//			return
-//		}
-//		//ctx := context.WithValue(r.Context(), "UUID", uuid)
-//
-//		next.ServeHTTP(w, r) //r.WithContext(ctx))
-//	})
-//}
+// Authorize is a middleware for authorization
+func Authorize(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check authorization
+		uid := r.Header.Get("X-UUID")
+
+		_, err := SessionDB.GetRecord(uid)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+		} else {
+			next.ServeHTTP(w, r)
+		}
+	})
+}
 
 // Redirect user to specific service
-func Redirect(next http.Handler) http.Handler {
+func Redirect(_ http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		nr, _ := http.NewRequest(r.Method, "", r.Body)
-		nr.Header = r.Header
+		originalReq := r.URL.Path
+		to := ""
+		didFind := false
 
-		mr, err := client.Do(nr)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+		for _, i := range Config.Routes {
+			if originalReq == i.From {
+				to = i.To
+				didFind = true
+				break
+			}
 		}
 
-		body, _ := ioutil.ReadAll(mr.Body)
-		// TODO implement Header to response
-		w.Write(body)
+		if didFind == false {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			nr, _ := http.NewRequest(r.Method, to, r.Body)
+			nr.Header = r.Header
 
-		next.ServeHTTP(w, r)
+			mr, err := client.Do(nr)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				body, _ := ioutil.ReadAll(mr.Body)
+				for k, v := range mr.Header {
+					w.Header().Set(k, v[0])
+				}
+
+				w.Write(body)
+			}
+		}
 	})
 }

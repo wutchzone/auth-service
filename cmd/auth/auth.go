@@ -64,6 +64,18 @@ func init() {
 		SessionDB = sdb
 	}
 
+	// Init SMTP
+	fmt.Println("SMTP not implemented")
+
+	// Load services do ServiceDB
+	SessionDB.Client.FlushAll()
+	rslt := ServiceDB.GetAll()
+	ser, err := decodeServices(rslt)
+	for _, i := range ser{
+		SessionDB.SetRecord(i.Name(), "service", 0)
+	}
+	fmt.Println(emoji.Sprint(":white_check_mark: Services loaded succesfully"))
+
 	fmt.Println("Everything started!")
 }
 
