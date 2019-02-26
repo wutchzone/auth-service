@@ -58,7 +58,7 @@
   version = "v2.1.0"
 
 [[projects]]
-  digest = "1:9be9701967c831fb40a4b8b35c474b0a6e3af1f68ac35ad5fde6c44d71cbf4d1"
+  digest = "1:35c48816f14fe3a4dda5047742928082f0ae25f3e3257ac9b8dfb4c885a730c1"
   name = "github.com/mongodb/mongo-go-driver"
   packages = [
     "bson",
@@ -68,7 +68,6 @@
     "bson/primitive",
     "event",
     "internal",
-    "mongo",
     "mongo/options",
     "mongo/readconcern",
     "mongo/readpref",
@@ -121,6 +120,14 @@
   revision = "73f8eece6fdcd902c185bf651de50f3828bed5ed"
 
 [[projects]]
+  digest = "1:97b9ad9c2eb616ccb509d4cbfb9ceaaab6090051b10774f58f100ea6e16c4183"
+  name = "go.mongodb.org/mongo-driver"
+  packages = ["mongo"]
+  pruneopts = "UT"
+  revision = "e1f3d104525e687eda76125707c9852e429f2730"
+  version = "v0.3.0"
+
+[[projects]]
   branch = "master"
   digest = "1:d71baed52a5a67407a72b63949aa042ea68bb32fdab03e07704a4f1dc309d193"
   name = "golang.org/x/crypto"
@@ -164,8 +171,8 @@
     "github.com/google/uuid",
     "github.com/kyokomi/emoji",
     "github.com/mongodb/mongo-go-driver/bson",
-    "github.com/mongodb/mongo-go-driver/mongo",
     "github.com/wutchzone/api-response",
+    "go.mongodb.org/mongo-driver/mongo",
     "golang.org/x/crypto/bcrypt",
   ]
   solver-name = "gps-cdcl"

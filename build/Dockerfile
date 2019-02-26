@@ -12,9 +12,9 @@ WORKDIR /go/src/github.com/wutchzone/auth/
 COPY . .
 
 # Install all packages
-RUN go dep
+RUN dep ensure
 
-RUN go run go build ./cmd/auth/*.go -o ./release/app
+RUN go build -o ./release/app ./cmd/auth/*.go
 
 # 2. stage
 FROM alpine
@@ -23,4 +23,6 @@ WORKDIR /root/
 
 COPY --from=builder /go/src/github.com/wutchzone/auth/release .
 
-CMD ["./app"]
+COPY ./release/config.json .
+
+CMD ["./app", "./config.json"]

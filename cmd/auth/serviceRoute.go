@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/go-chi/chi"
-	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/wutchzone/api-response"
 	"github.com/wutchzone/auth-service/pkg/accountdb"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -48,7 +48,7 @@ func handleDeleteOneService(w http.ResponseWriter, r *http.Request) {
 }
 
 // Decodes multiple services into array
-func decodeServices(cursor mongo.Cursor) ([]accountdb.Service, error) {
+func decodeServices(cursor *mongo.Cursor) ([]accountdb.Service, error) {
 	var rslt []accountdb.Service
 	decoder := &accountdb.Service{}
 
@@ -66,6 +66,6 @@ func decodeServices(cursor mongo.Cursor) ([]accountdb.Service, error) {
 }
 
 // Decodes one service
-func decodeService(rslt *mongo.DocumentResult, decoder *accountdb.Service) error {
+func decodeService(rslt *mongo.SingleResult, decoder *accountdb.Service) error {
 	return rslt.Decode(decoder)
 }

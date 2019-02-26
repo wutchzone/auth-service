@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/mongodb/mongo-go-driver/bson"
-	"github.com/mongodb/mongo-go-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type DBItem interface {
@@ -42,13 +42,12 @@ func NewAccountDBConnection(addr string, table string, defaultCollection string)
 }
 
 // GetUser from DB
-func (d *DB) GetAccount(name string) *mongo.DocumentResult {
+func (d *DB) GetAccount(name string) *mongo.SingleResult {
 	return d.db.Collection(d.defaultCollectionName).FindOne(nil, bson.M{"name": name})
 }
 
 //SaveUser to the DB
 func (d *DB) SaveAccount(u DBItem) error {
-
 	if _, err := d.db.Collection(d.defaultCollectionName).InsertOne(nil, u); err != nil {
 		return errors.New("Error while saving account to the DB.")
 	} else {
@@ -57,7 +56,7 @@ func (d *DB) SaveAccount(u DBItem) error {
 
 }
 
-func (d *DB) GetAll() mongo.Cursor {
+func (d *DB) GetAll() *mongo.Cursor {
 	cursor, _ := d.db.Collection(d.defaultCollectionName).Find(nil, bson.M{})
 
 	return cursor
