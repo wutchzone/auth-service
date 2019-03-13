@@ -6,4 +6,4 @@ default:
 
 build:
 	@ echo "Building image"
-	docker image build --tag "wutchzone/auth" -f build/Dockerfile .
+	docker image build --tag "wutchzone/auth-service" -f build/Dockerfile .

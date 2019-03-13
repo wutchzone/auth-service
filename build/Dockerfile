@@ -7,7 +7,7 @@ RUN apk --update add curl git
 # Installing dep
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
-WORKDIR /go/src/github.com/wutchzone/auth/
+WORKDIR /go/src/github.com/wutchzone/auth-service/
 
 COPY . .
 
@@ -21,8 +21,8 @@ FROM alpine
 
 WORKDIR /root/
 
-COPY --from=builder /go/src/github.com/wutchzone/auth/release .
+COPY --from=builder /go/src/github.com/wutchzone/auth-service/release .
 
-COPY ./release/config.json .
+COPY ./configs/config.json .
 
 CMD ["./app", "./config.json"]

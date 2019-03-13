@@ -1,16 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/kyokomi/emoji"
 	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"github.com/wutchzone/auth-service/pkg/configuration"
 	"github.com/wutchzone/auth-service/pkg/sessiondb"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 )
 
 // Config is reference for service configuration
@@ -23,20 +20,15 @@ var (
 
 func init() {
 	// Check if config file was passed
-	if len(os.Args) == 1 {
+	if len(os.Args) == 1 || len(os.Args) > 2 {
 		panic("Configuration file was not specified as an argument")
 	}
 
-	// Read config file
-	f, err := ioutil.ReadFile(os.Args[len(os.Args)-1])
-	if err != nil {
-		panic("Can not read configuration file")
-	}
-
 	// Parse configuration file
-	if err := json.NewDecoder(strings.NewReader(string(f))).Decode(&Config); err != nil {
+	if conf, err := configuration.NewConfiguration(os.Args[1]); err != nil {
 		panic("Configuration file is badly formatted")
 	} else {
+		Config = conf
 		fmt.Println(emoji.Sprint(":white_check_mark: Configuration loaded succesfully"))
 	}
 
@@ -67,11 +59,45 @@ func init() {
 	// Init SMTP
 	fmt.Println("SMTP not implemented")
 
+	// Start up configuration
+	if !Config.Dev.IgnoreStartup {
+		sud, err := accountdb.NewAccountDBConnection(Config.GeneralDB.URL, Config.GeneralDB.Table, "general")
+		if err != nil {
+			panic(err)
+		}
+		r := sud.GetAccount("startup")
+
+		if err != nil {
+			panic(err)
+		}
+
+		i := &configuration.StartupConfiguration{}
+
+		// Try if document exists
+		if err := r.Decode(i); err != nil {
+			ns := configuration.NewStartup()
+			ns.FirstBoot = false
+			sud.SaveAccount(ns)
+			// First init
+			// Push default service to the DB
+			if Config.User.ServiceToken != "" {
+				ServiceDB.SaveAccount(&accountdb.Service{
+					ID:    Config.User.ServiceToken,
+					Level: 999999999,
+				})
+			}
+
+			fmt.Println("First initialization")
+		} else {
+			// Late init
+		}
+	}
+
 	// Load services do ServiceDB
 	SessionDB.Client.FlushAll()
 	rslt := ServiceDB.GetAll()
-	ser, err := decodeServices(rslt)
-	for _, i := range ser{
+	ser, _ := decodeServices(rslt)
+	for _, i := range ser {
 		SessionDB.SetRecord(i.Name(), "service", 0)
 	}
 	fmt.Println(emoji.Sprint(":white_check_mark: Services loaded succesfully"))
