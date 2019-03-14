@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -19,6 +20,10 @@ func InitRoutes() *chi.Mux {
 	r.Get("/", handleHello)
 
 	r.Route("/api", func(r chi.Router) {
+		// Log all access to STDIN
+		// TODO: Log to file
+		r.Use(Log)
+
 		// Check if user has enough privilegies
 		r.Use(Authorize)
 
@@ -114,6 +119,14 @@ func Authorize(next http.Handler) http.Handler {
 		} else {
 			next.ServeHTTP(w, r)
 		}
+	})
+}
+
+// Log input to STDIN
+func Log(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%v => %v", r.URL.Path, "TODO")
+		next.ServeHTTP(w, r)
 	})
 }
 
