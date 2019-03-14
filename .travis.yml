@@ -6,4 +6,5 @@ services:
 script:
 # Build Dockerfile
   - make build
-  - docker login -u "$DOUSERNAME" -p "$DOPASSWORD"
+  - docker login -u "$DOUSER" -p "$DOPASSWORD"
+  - docker image push wutchzone/auth-service:latest
