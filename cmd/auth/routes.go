@@ -28,8 +28,13 @@ func InitRoutes() *chi.Mux {
 		r.Use(Authorize)
 
 		// Redirect
-		r.Use(Redirect)
-		r.Get("/", handleHello)
+		for _, i := range Config.Routes {
+			r.Get(i.From, Redirect)
+			r.Post(i.From, Redirect)
+			r.Put(i.From, Redirect)
+			r.Delete(i.From, Redirect)
+
+		}
 	})
 
 	r.Route("/user", func(r chi.Router) {
@@ -131,37 +136,35 @@ func Log(next http.Handler) http.Handler {
 }
 
 // Redirect user to specific service
-func Redirect(_ http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		originalReq := r.URL.Path
-		to := ""
-		didFind := false
+func Redirect(w http.ResponseWriter, r *http.Request) {
+	originalReq := r.URL.Path
+	to := ""
+	didFind := false
 
-		for _, i := range Config.Routes {
-			if originalReq == i.From {
-				to = i.To
-				didFind = true
-				break
-			}
+	for _, i := range Config.Routes {
+		if originalReq == i.From {
+			to = i.To
+			didFind = true
+			break
 		}
+	}
 
-		if didFind == false {
-			w.WriteHeader(http.StatusNotFound)
+	if didFind == false {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		nr, _ := http.NewRequest(r.Method, to, r.Body)
+		nr.Header = r.Header
+
+		mr, err := client.Do(nr)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 		} else {
-			nr, _ := http.NewRequest(r.Method, to, r.Body)
-			nr.Header = r.Header
-
-			mr, err := client.Do(nr)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-			} else {
-				body, _ := ioutil.ReadAll(mr.Body)
-				for k, v := range mr.Header {
-					w.Header().Set(k, v[0])
-				}
-
-				w.Write(body)
+			body, _ := ioutil.ReadAll(mr.Body)
+			for k, v := range mr.Header {
+				w.Header().Set(k, v[0])
 			}
+
+			w.Write(body)
 		}
-	})
+	}
 }

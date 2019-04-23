@@ -2,6 +2,7 @@ package accountdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/mongodb/mongo-go-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,7 +21,7 @@ type DB struct {
 // NewSession returns pointer to the new sessiondb
 func NewAccountDBConnection(addr string, table string, defaultCollection string) (*DB, error) {
 	d := &DB{}
-
+	json.Decoder{}
 	// Create client instance
 	c, err := mongo.NewClient(addr)
 	if err != nil {

@@ -1,9 +1,16 @@
-.PHONY: build
+.PHONY: all build test buildimage
 
-default:
+all:
 	@ echo "Available commands:"
 	@ echo "make build 	- builds image"
 
 build:
+    @ Building application
+    @ go build -o ./release/app ./cmd/auth/*.go
+
+test:
+    @ Run tests
+
+buildimage:
 	@ echo "Building image"
-	docker image build --tag "wutchzone/auth-service" -f build/Dockerfile .
+	docker image buildimage --tag "wutchzone/auth-service" -f build/Dockerfile .

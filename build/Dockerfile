@@ -2,7 +2,7 @@
 FROM golang:alpine AS builder
 
 # Install package manager
-RUN apk --update add curl git
+RUN apk --update add curl git make
 
 # Installing dep
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -14,7 +14,7 @@ COPY . .
 # Install all packages
 RUN dep ensure
 
-RUN go build -o ./release/app ./cmd/auth/*.go
+RUN make build
 
 # 2. stage
 FROM alpine
