@@ -13,6 +13,9 @@ test:
 	go test ./pkg/accountdb
 	go test ./pkg/sessiondb
 
+install:
+	dep ensure
+
 dev:
 	docker-compose -f ./deployments/docker-compose.yml up -d
 
