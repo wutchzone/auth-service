@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"regexp"
 )
 
 var client = http.Client{
@@ -21,19 +22,18 @@ func InitRoutes() *chi.Mux {
 
 	r.Route("/api", func(r chi.Router) {
 		// Log all access to STDIN
-		// TODO: Log to file
 		r.Use(Log)
 
 		// Check if user has enough privilegies
-		r.Use(Authorize)
+		//r.Use(Authorize)
 
 		// Redirect
 		for _, i := range Config.Routes {
-			r.Get(i.From, Redirect)
-			r.Post(i.From, Redirect)
-			r.Put(i.From, Redirect)
-			r.Delete(i.From, Redirect)
-
+			fmt.Println(i)
+			r.Get(i.From, PrepareURL)
+			r.Post(i.From, PrepareURL)
+			r.Delete(i.From, PrepareURL)
+			r.Put(i.From, PrepareURL)
 		}
 	})
 
@@ -74,44 +74,6 @@ func handleHello(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte(fmt.Sprintf("Server is listening on port: %v", Config.DefaultPort)))
 }
 
-// CheckIfAdminOrUser checks for correct ptivilegies
-//func CheckIfAdminOrUser(next http.Handler) http.Handler {
-//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		url := strings.Split(r.URL.String(), "/")
-//		n := url[len(url)-1]
-//		uid := r.Header.Get("X-UUID")
-//
-//		// Check if UUID is in sessiondb DB
-//		sn, errSession := sessiondb.GetRecord(uid)
-//		if errSession != nil {
-//			sendError(w, "Invalid UUID", http.StatusBadRequest)
-//			return
-//		}
-//
-//		// Check if user is current user
-//		if sn != n {
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//
-//		// Check if user is admin
-//		u, errUserdb := accountdb.GetUser(n)
-//		if errUserdb != nil {
-//			w.WriteHeader(http.StatusInternalServerError)
-//			return
-//		}
-//		if sn == n {
-//			next.ServeHTTP(w, r)
-//		}
-//		if u.Role < user.Admin {
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//
-//		next.ServeHTTP(w, r)
-//	})
-//}
-//
 // Authorize is a middleware for authorization
 func Authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -135,36 +97,36 @@ func Log(next http.Handler) http.Handler {
 	})
 }
 
-// Redirect user to specific service
-func Redirect(w http.ResponseWriter, r *http.Request) {
-	originalReq := r.URL.Path
-	to := ""
-	didFind := false
+// PrepareURL for parsing URL
+func PrepareURL(w http.ResponseWriter, r *http.Request) {
+	reg := regexp.MustCompile(`{.[^}]*}`)
+	matches := reg.FindAllString(i.From, -1)
 
-	for _, i := range Config.Routes {
-		if originalReq == i.From {
-			to = i.To
-			didFind = true
-			break
-		}
+	final := i.To
+
+	for _, i := range matches {
+		final = strings.Replace(final, i, chi.URLParam(r, i[1:len(i)-1]), -1)
 	}
 
-	if didFind == false {
-		w.WriteHeader(http.StatusNotFound)
+	fmt.Println(final)
+	Redirect(w, r, final)
+}
+
+// Redirect user to specific service
+func Redirect(w http.ResponseWriter, r *http.Request, to string) {
+	nr, _ := http.NewRequest(r.Method, to, r.Body)
+	nr.Header = r.Header
+
+	mr, err := client.Do(nr)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		nr, _ := http.NewRequest(r.Method, to, r.Body)
-		nr.Header = r.Header
-
-		mr, err := client.Do(nr)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			body, _ := ioutil.ReadAll(mr.Body)
-			for k, v := range mr.Header {
-				w.Header().Set(k, v[0])
-			}
-
-			w.Write(body)
+		body, _ := ioutil.ReadAll(mr.Body)
+		for k, v := range mr.Header {
+			w.Header().Set(k, v[0])
 		}
+
+		w.Write(body)
 	}
 }

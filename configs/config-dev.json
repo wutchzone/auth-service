@@ -2,14 +2,14 @@
   "default_port": 7080,
   "routes": [
     {
-      "from": "/api/google",
-      "to": "https://google.com",
+      "from": "/pokus/{test}",
+      "to": "http://localhost:1234/odpoved/{test}",
       "level": 0
     }
   ],
   "roles": [],
   "sessiondb": {
-    "url": "localhost:6379",
+    "url": "localhost:7000",
     "name": "",
     "password": "",
     "table": ""
@@ -26,6 +26,15 @@
     "password": "",
     "table": "dev"
   },
+  "generaldb": {
+    "url": "mongodb://localhost:27017",
+    "name": "",
+    "password": "",
+    "table": "dev"
+  },
   "user": {
+    "name": "admin",
+    "password": "admin",
+    "servicetoken": "pokus123456"
   }
 }
