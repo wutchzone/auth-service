@@ -1,6 +1,7 @@
 package accountdb
 
 import (
+	"context"
 	"testing"
 )
 
@@ -31,80 +32,75 @@ func TestNewUser(t *testing.T) {
 	}
 }
 
-func TestNewAccountDBConnection(t *testing.T) {
+func TestUserConnection(t *testing.T) {
 	// Make fresh instance of DB
-	// d, err := NewAccountDBConnection("mongodb://localhost:27017", "test", "test")
-	// d.db.Drop(nil)
+	db := GetInstance(AccountConfiguration{
+		AccoutCollectionName:  "accounts",
+		Address:               "mongodb://localhost:27017",
+		ServiceCollectionName: "services",
+	})
 
-	// u1, _ := NewUser("test", "123456", "test@test.com", "test")
 	// Test connection
-	//if err != nil {
-	//	t.Errorf("Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
+	if db == nil {
+		t.Errorf("Expected value, got nil")
+		t.FailNow()
+	}
 
-	//// Test if user not found
-	//if err := d.GetAccount(u1.Username, &User{}); err == nil {
-	//	t.Errorf("Expected error, got nil")
-	//	t.FailNow()
-	//}
-	//
-	//// Test create user
-	//if err := d.SaveAccount(u1); err != nil {
-	//	t.Errorf("Error creating user. Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
-	//if err := d.GetAccount(u1.Username, &User{}); err != nil {
-	//	t.Errorf("Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
-	//
-	//// Test update user
-	//old := u1.Email
-	//u1.Email = "test2@test.com"
-	//if err := d.UpdateAccount(u1); err != nil {
-	//	t.Errorf("Error user update. Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
-	//
-	//u2 := User{}
-	//if err := d.GetAccount(u1.Username, &u2); err != nil {
-	//	t.Errorf("Error user update. Expected nil, got %v", err)
-	//	t.FailNow()
-	//} else if old == u2.Email {
-	//	t.Errorf("Error user update. Expected %v, got %v", old, u1.Email)
-	//	t.FailNow()
-	//}
-	//
-	//// Test create user with same username
-	////if err := d.saveAccount(u1); err == nil {
-	////	t.Errorf("Error creating user. Username cannot be duplicit. Expected error, got nil")
-	////	t.FailNow()
-	////}
-	//
-	//// Test delete user
-	//if err := d.DeleteAccount(u1); err != nil {
-	//	t.Errorf("Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
-	//if err := d.GetAccount(u1.Username, &User{}); err == nil {
-	//	t.Errorf("Expected nil, got %v", err)
-	//	t.FailNow()
-	//}
+	db.db.Drop(context.Background())
 
-	// Test get all users
-	// usrs := make([]user.User, 10)
+	u1, _ := NewUser("test", "123456", "test@test.com", "test")
 
-	// cursor := d.GetAll()
 
-	//itemsToSend := []user.User{}
-	//itemRead := user.User{}
-	//for cursor.Next(nil) {
-	//	err := cursor.Decode(&itemRead)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	itemsToSend = append(itemsToSend, itemRead)
-	//}
+	// Test if user not found
+	if _, err := db.GetAccount(u1.Username); err == nil {
+		t.Errorf("Expected error, got nil")
+		t.Fail()
+	}
 
+	// Test create user
+	if err := db.SaveUser(*u1); err != nil {
+		t.Errorf("Error creating user. Expected nil, got %v", err)
+		t.Fail()
+	}
+	ru1, err := db.GetAccount(u1.Username)
+	if err != nil {
+		t.Errorf("Expected nil, got %v", err)
+		t.Fail()
+	}
+	if ru1.Username != u1.Username && ru1.Email != u1.Email && ru1.Password != u1.Password && ru1.Role != u1.Role {
+		t.Errorf("Returned user mismatched, expected the same user as saved")
+		t.Fail()
+	}
+
+	// Test update user
+	old := u1.Email
+	u1.Email = "test2@test.com"
+	if err := db.UpdateUser(*u1); err != nil {
+		t.Errorf("Error user update. Expected nil, got %v", err)
+		t.FailNow()
+	}
+
+	if ru2, err := db.GetAccount(u1.Username); err != nil {
+		t.Errorf("Error user update. Expected nil, got %v", err)
+		t.FailNow()
+	} else if old == ru2.Email {
+		t.Errorf("Error user update. Expected %v, got %v", old, u1.Email)
+		t.FailNow()
+	}
+
+	// Test create user with same username
+	if err := db.SaveUser(*u1); err == nil {
+		t.Errorf("Error creating user. Username cannot be duplicit. Expected error, got nil")
+		t.FailNow()
+	}
+
+	// Test delete user
+	if err := db.DeleteUser(u1.Username); err != nil {
+		t.Errorf("Expected nil, got %v", err)
+		t.FailNow()
+	}
+	if _, err := db.GetAccount(u1.Username); err == nil {
+		t.Errorf("Expected nil, got %v", err)
+		t.FailNow()
+	}
 }

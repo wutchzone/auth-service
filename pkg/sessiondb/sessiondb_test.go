@@ -1,40 +1,35 @@
 package sessiondb
 
 import (
-	"os"
 	"testing"
 	"time"
 )
 
-var REDIS_URL = "localhost:6379"
-
 func TestNewSessionDB(t *testing.T) {
-	// Try to get redis url from system env
-	env := os.Getenv("REDIS")
+	d := GetInstance(SessionDBConfiguration{
+		TableID: 1,
+		Address: "localhost:6379",
+	})
 
-	if env != "" {
-		REDIS_URL = env
+	if d == nil {
+		t.Error("Failed to GetInstance of session DB. Expected value, got nil")
 	}
+	// Clean all data
 
-	// Create instance of redis
-	d, err := NewSessionDB(REDIS_URL, "", 0)
-	//d.client.FlushAll()
-
-	if err != nil {
-		t.Errorf("Error creading redis connection expected nil, got %v", err)
-		t.FailNow()
-	}
+	d.c.FlushAll()
 
 	// Add record
-	value := "testValue"
+	value := SessionItem{
+		RoleLevel: 10,
+	}
 	key := "testKey"
 	if err := d.SetRecord(key, value, 0); err != nil {
 		t.Errorf("Error setting record, expected nil, got: %v", err)
 		t.FailNow()
 	}
 
-	if got, err := d.GetRecord(key); err != nil || got != value {
-		t.Errorf("Error getting error that was set. Expected: %v got %v with error %v", value, got, err)
+	if got, err := d.GetRecord(key); err != nil || got.RoleLevel != value.RoleLevel {
+		t.Errorf("Error getting value that was set. Expected: %v got %v ,with error %v", value, got, err)
 	}
 
 	// Remove record
@@ -48,13 +43,15 @@ func TestNewSessionDB(t *testing.T) {
 	}
 
 	// Check for timed record before expire
-	if got, err := d.GetRecord(key); err != nil || got != value {
+	if got, err := d.GetRecord(key); err != nil || got.RoleLevel != value.RoleLevel {
 		t.Errorf("Error getting error that was set. Expected: %v got %v with error %v", value, got, err)
 	}
 
 	// Check for timed record after expire
-	time.Sleep(time.Second * 2)
-	if _, err := d.GetRecord(key); err == nil {
-		t.Errorf("Error getting error that was unset. Expected: error got nil")
+	time.Sleep(time.Second * 3)
+	_, err := d.GetRecord(key)
+
+	if err == nil {
+		t.Errorf("User did not expired. Expected: error got nil")
 	}
 }

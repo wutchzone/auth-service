@@ -6,13 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
 	"regexp"
+	"strings"
 )
-
-var client = http.Client{
-	Timeout: 10 * time.Second,
-}
 
 // InitRoutes for api
 func InitRoutes() *chi.Mux {
@@ -20,51 +16,39 @@ func InitRoutes() *chi.Mux {
 
 	r.Get("/", handleHello)
 
-	r.Route("/api", func(r chi.Router) {
+	r.Route("/", func(r chi.Router) {
 		// Log all access to STDIN
 		r.Use(Log)
 
-		// Check if user has enough privilegies
-		//r.Use(Authorize)
+		r.Route("/user", func(r chi.Router) {
+			// Make authorization for correct privilegies
+			// Because normal user can see only his profile
+			// r.Use(CheckIfAdminOrUser)
 
-		// Redirect
-		for _, i := range Config.Routes {
-			fmt.Println(i)
-			r.Get(i.From, PrepareURL)
-			r.Post(i.From, PrepareURL)
-			r.Delete(i.From, PrepareURL)
-			r.Put(i.From, PrepareURL)
-		}
-	})
+			// r.Get("/{name}", nil) // Display user
+			// r.Put("/{name}", nil) // Update user settings
+		})
 
-	r.Route("/user", func(r chi.Router) {
-		// Make authorization for correct privilegies
-		// Because normal user can see only his profile
-		// r.Use(CheckIfAdminOrUser)
+		r.Route("/service", func(r chi.Router) {
+			// Check if user has enough privilegies
+			r.Use(Authorize)
 
-		// r.Get("/{name}", nil) // Display user
-		// r.Put("/{name}", nil) // Update user settings
-	})
+			// Register new route
+			r.Get("/", handleGetAllServices)
+			r.Post("/", handleRegisterRoute)
+			r.Get("/{id}", handleGetOneService)
+			r.Delete("/{id}", handleDeleteOneService)
+		})
 
-	r.Route("/service", func(r chi.Router) {
-		// Check if user has enough privilegies
-		r.Use(Authorize)
+		r.Route("/auth", func(r chi.Router) {
+			//r.Post("/register", nil)
+			//r.Post("/login", nil)
+			//r.Post("/logout", nil) // logout
+			//r.Post("/reset", nil) // Reset password
 
-		// Register new route
-		r.Get("/", handleGetAllServices)
-		r.Post("/", handleRegisterRoute)
-		r.Get("/{id}", handleGetOneService)
-		r.Delete("/{id}", handleDeleteOneService)
-	})
-
-	r.Route("/auth", func(r chi.Router) {
-		//r.Post("/register", nil)
-		//r.Post("/login", nil)
-		//r.Post("/logout", nil)
-		//r.Post("/reset", nil)
-
-		// Send available roles
-		// r.Get("/roles", nil)
+			// Send available roles
+			// r.Get("/roles", nil)
+		})
 	})
 
 	return r
@@ -78,7 +62,7 @@ func handleHello(w http.ResponseWriter, _ *http.Request) {
 func Authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check authorization
-		uid := r.Header.Get("X-UUID")
+		uid := r.Header.Get("Authorization")
 
 		_, err := SessionDB.GetRecord(uid)
 		if err != nil {

@@ -14,7 +14,3 @@ func NewService(level int) *Service {
 		Level: level,
 	}
 }
-
-func (s Service) Name() string {
-	return s.ID
-}

@@ -46,7 +46,7 @@
   version = "0.3.0"
 
 [[constraint]]
-  branch = "master"
+  version = "1.1.0"
   name = "github.com/wutchzone/api-response"
 
 [[constraint]]

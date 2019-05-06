@@ -1,35 +1,52 @@
 package sessiondb
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis"
 )
 
-var client *redis.Client
+var Singleton *SessionDB
 
-type SessionDB struct {
-	Client *redis.Client
+type SessionDBConfiguration struct {
+	Address string
+	TableID int
 }
 
-// NewSession returns pointer to the new sessiondb
-func NewSessionDB(addr string, pswd string, table int) (*SessionDB, error) {
-	client = redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: pswd,  // no password set
-		DB:       table, // use default DB
-	})
+type SessionDB struct {
+	c *redis.Client
+}
 
-	if _, err := client.Ping().Result(); err != nil {
-		return nil, err
+func GetInstance(conf SessionDBConfiguration) *SessionDB {
+	if Singleton == nil {
+		s := &SessionDB{}
+		s.c = redis.NewClient(&redis.Options{
+			Addr:     conf.Address,
+			Password: "",           // no password set
+			DB:       conf.TableID, // use default DB
+		})
+
+		// Check connection
+		if _, err := s.c.Ping().Result(); err != nil {
+			return nil
+		}
+
+		Singleton = s
 	}
 
-	return &SessionDB{Client: client}, nil
+	return Singleton
 }
 
 // SetRecord to the redis, you can choose between persistent record (duration 0) and timed record (duration > 0)
-func (d *SessionDB) SetRecord(key string, value interface{}, time time.Duration) error {
-	if err := d.Client.Set(key, value, time).Err(); err != nil {
+func (d *SessionDB) SetRecord(key string, value SessionItem, time time.Duration) error {
+	mar, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	if err := d.c.Set(key, mar, time).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -37,18 +54,25 @@ func (d *SessionDB) SetRecord(key string, value interface{}, time time.Duration)
 
 // RemoveRecord from the redis
 func (d *SessionDB) RemoveRecord(key string) error {
-	if err := d.Client.Del(key).Err(); err != nil {
+	if err := d.c.Del(key).Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
 // GetRecord from the redis
-func (d *SessionDB) GetRecord(key string) (interface{}, error) {
-	r := d.Client.Get(key)
+func (d *SessionDB) GetRecord(key string) (*SessionItem, error) {
+	s := &SessionItem{}
+	r := d.c.Get(key)
 
 	if r.Err() != nil {
-		return nil, r.Err()
+		return nil, errors.New("unable to get session record")
 	}
-	return r.Val(), nil
+
+	dat := r.Val()
+	if err := json.Unmarshal([]byte(dat), &s); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

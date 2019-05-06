@@ -7,68 +7,103 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type DBItem interface {
-	Name() string
-}
+var Singleton *DB
 
 type DB struct {
-	client                *mongo.Client
-	db                    *mongo.Database
-	defaultCollectionName string
+	client *mongo.Client
+	db     *mongo.Database
+	config AccountConfiguration
 }
 
-// NewSession returns pointer to the new sessiondb
-func NewAccountDBConnection(addr string, table string, defaultCollection string) (*DB, error) {
-	d := &DB{}
-	//json.Decoder{}
-	// Create client instance
-	c, err := mongo.NewClient(addr)
-	if err != nil {
+type AccountConfiguration struct {
+	AccoutCollectionName  string
+	ServiceCollectionName string
+	Address               string
+}
+
+// GetInstance returns pointer to the actual connection. Func expect address, name of the table and default
+// collection name
+func GetInstance(conf AccountConfiguration) *DB {
+	if Singleton == nil {
+		d := &DB{}
+		d.config = conf
+		// Create client instance
+		c, err := mongo.NewClient(conf.Address)
+		if err != nil {
+			return nil
+		}
+
+		// Try to connect to the DB
+		err = c.Connect(context.Background())
+		err = c.Ping(context.Background(), nil)
+		if err != nil {
+			return nil
+		}
+
+		// assign DB and client reference for future purpose
+		d.db = c.Database("auth")
+		d.client = c
+
+		Singleton = d
+	}
+
+	return Singleton
+}
+
+// GetUser from DB by specific name
+func (d *DB) GetAccount(name string) (*User, error) {
+	o := &User{}
+	result := d.db.Collection(d.config.AccoutCollectionName).FindOne(nil, bson.M{"name": name})
+
+	if err := result.Decode(o); err != nil {
 		return nil, err
 	}
 
-	// Try to connect to the DB
-	err = c.Connect(context.Background())
-	err = c.Ping(context.Background(), nil)
-	if err != nil {
-		return nil, err
+	return o, nil
+}
+
+//SaveUser saves new user instance to the DB
+func (d *DB) SaveUser(u User) error {
+	if _, err := d.GetAccount(u.Name()); err == nil { // error == nil means that user was found succesfully
+		return errors.New("user already exists")
 	}
 
-	// assign DB and client reference for future purpose
-	d.defaultCollectionName = defaultCollection
-	d.db = c.Database(table)
-	d.client = c
-	return d, nil
-}
-
-// GetUser from DB
-func (d *DB) GetAccount(name string) *mongo.SingleResult {
-	return d.db.Collection(d.defaultCollectionName).FindOne(nil, bson.M{"name": name})
-}
-
-//SaveUser to the DB
-func (d *DB) SaveAccount(u DBItem) error {
-	if _, err := d.db.Collection(d.defaultCollectionName).InsertOne(nil, u); err != nil {
-		return errors.New("Error while saving account to the DB.")
+	if _, err := d.db.Collection(d.config.AccoutCollectionName).InsertOne(nil, u); err != nil {
+		return errors.New("error while saving account to the db")
 	} else {
 		return nil
 	}
 
 }
 
-func (d *DB) GetAll() *mongo.Cursor {
-	cursor, _ := d.db.Collection(d.defaultCollectionName).Find(nil, bson.M{})
+func (d *DB) GetAllUsers() ([]User, error) {
+	o := []User{}
+	cur, err := d.db.Collection(d.config.AccoutCollectionName).Find(nil, bson.M{})
 
-	return cursor
+	if err != nil {
+		return nil, errors.New("unable to retrieve all users")
+	}
+
+	for cur.Next(context.Background()) {
+		var elem User
+
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, errors.New("unable to retrieve all users")
+		}
+		o = append(o, elem)
+	}
+
+	return o, nil
 }
 
-func (d *DB) DeleteAccount(u string) error {
-	_, err := d.db.Collection(d.defaultCollectionName).DeleteOne(nil, bson.M{"name": u})
+func (d *DB) DeleteUser(u string) error {
+	_, err := d.db.Collection(d.config.AccoutCollectionName).DeleteOne(nil, bson.M{"name": u})
 	return err
 }
 
 // Modify user's data in the DB
-func (d *DB) UpdateAccount(u DBItem) error {
-	_, err := d.db.Collection(d.defaultCollectionName).UpdateOne(nil, bson.M{"name": u.Name()}, bson.M{"$set": u})
+func (d *DB) UpdateUser(u User) error {
+	_, err := d.db.Collection(d.config.AccoutCollectionName).UpdateOne(nil, bson.M{"name": u.Name()}, bson.M{"$set": u})
 	return err
 }
