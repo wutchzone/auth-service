@@ -1,6 +1,7 @@
 package sessiondb
 
 import (
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"testing"
 	"time"
 )
@@ -20,7 +21,7 @@ func TestNewSessionDB(t *testing.T) {
 
 	// Add record
 	value := SessionItem{
-		RoleLevel: 10,
+		Role: accountdb.Guest,
 	}
 	key := "testKey"
 	if err := d.SetRecord(key, value, 0); err != nil {
@@ -28,7 +29,7 @@ func TestNewSessionDB(t *testing.T) {
 		t.FailNow()
 	}
 
-	if got, err := d.GetRecord(key); err != nil || got.RoleLevel != value.RoleLevel {
+	if got, err := d.GetRecord(key); err != nil || got.Role != value.Role {
 		t.Errorf("Error getting value that was set. Expected: %v got %v ,with error %v", value, got, err)
 	}
 
@@ -43,7 +44,7 @@ func TestNewSessionDB(t *testing.T) {
 	}
 
 	// Check for timed record before expire
-	if got, err := d.GetRecord(key); err != nil || got.RoleLevel != value.RoleLevel {
+	if got, err := d.GetRecord(key); err != nil || got.Role != value.Role {
 		t.Errorf("Error getting error that was set. Expected: %v got %v with error %v", value, got, err)
 	}
 
@@ -53,5 +54,14 @@ func TestNewSessionDB(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("User did not expired. Expected: error got nil")
+	}
+}
+
+func TestNewSessionKey(t *testing.T) {
+	u1 := NewSessionKey()
+	u2 := NewSessionKey()
+
+	if u1 == u2 {
+		t.Error("Expected different values when calling NewSessionKey twice")
 	}
 }

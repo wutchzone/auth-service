@@ -6,16 +6,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Role int
+
+var (
+	Guest       Role = 10
+	DefaultUser Role = 20
+	PremiumUser Role = 30
+	Editor      Role = 40
+	Maintainer  Role = 50
+	SuperAdmin  Role = 60
+)
+
 // User struct
 type User struct {
 	Username string `bson:"name",json:"name"`
 	Password string `bson:"password",json:"-"`
 	Email    string `bson:"email",json:"email"`
-	Role     string `bson:"role",json:"role"`
+	Role     Role   `bson:"role",json:"role"`
 }
 
 // NewUser instance
-func NewUser(name string, password string, email string, role string) (*User, error) {
+func NewUser(name string, password string, email string, role Role) (*User, error) {
 	hashedPswd, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if name == "" {
@@ -41,6 +52,6 @@ func (u *User) ComparePswdAndHash(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte((*u).Password), []byte(password))
 }
 
-func (u *User) Name() string{
+func (u *User) Name() string {
 	return u.Username
 }

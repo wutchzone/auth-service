@@ -3,6 +3,8 @@ package sessiondb
 import (
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
+	"github.com/wutchzone/auth-service/pkg/accountdb"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -17,6 +19,18 @@ type SessionDBConfiguration struct {
 
 type SessionDB struct {
 	c *redis.Client
+}
+
+// NewSessionKey return unique identifier that can be used as a key for session DB
+func NewSessionKey() string {
+	return uuid.New().String()
+}
+
+// NewSessionItem return pointer to the newly created instance of the SessionItem
+func NewSessionItem(role accountdb.Role) *SessionItem {
+	return &SessionItem{
+		Role: role,
+	}
 }
 
 func GetInstance(conf SessionDBConfiguration) *SessionDB {

@@ -41,10 +41,11 @@ func InitRoutes() *chi.Mux {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			//r.Post("/register", nil)
-			//r.Post("/login", nil)
+			r.Post("/register", HandleRegister)
+			r.Post("/login", HandleLogin)
 			//r.Post("/logout", nil) // logout
 			//r.Post("/reset", nil) // Reset password
+			//r.Get //validate
 
 			// Send available roles
 			// r.Get("/roles", nil)
