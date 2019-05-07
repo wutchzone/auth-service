@@ -65,7 +65,7 @@ func (d *DB) GetAccount(name string) (*User, error) {
 //SaveUser saves new user instance to the DB
 func (d *DB) SaveUser(u User) error {
 	if _, err := d.GetAccount(u.Name()); err == nil { // error == nil means that user was found succesfully
-		return errors.New("user already exists")
+		return errors.New("user with this name already exists")
 	}
 
 	if _, err := d.db.Collection(d.config.AccoutCollectionName).InsertOne(nil, u); err != nil {
