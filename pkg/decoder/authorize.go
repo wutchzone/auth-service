@@ -3,6 +3,6 @@ package decoder
 import "time"
 
 type Authorize struct {
-	Token      string
-	Expiration time.Time
+	Token      string    `json:"token"`
+	Expiration time.Time `json:"expiration"`
 }

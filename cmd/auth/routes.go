@@ -3,11 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"regexp"
-	"strings"
 )
 
 // InitRoutes for api
@@ -34,10 +31,10 @@ func InitRoutes() *chi.Mux {
 			r.Use(Authorize)
 
 			// Register new route
-			r.Get("/", handleGetAllServices)
-			r.Post("/", handleRegisterRoute)
-			r.Get("/{id}", handleGetOneService)
-			r.Delete("/{id}", handleDeleteOneService)
+			//r.Get("/", handleGetAllServices)
+			//r.Post("/", handleRegisterRoute)
+			//r.Get("/{id}", handleGetOneService)
+			//r.Delete("/{id}", handleDeleteOneService)
 		})
 
 		r.Route("/auth", func(r chi.Router) {
@@ -56,7 +53,7 @@ func InitRoutes() *chi.Mux {
 }
 
 func handleHello(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte(fmt.Sprintf("Server is listening on port: %v", Config.DefaultPort)))
+	w.Write([]byte(fmt.Sprintf("Server is listening on port: %v\n", Config.DefaultPort)))
 }
 
 // Authorize is a middleware for authorization
@@ -77,41 +74,7 @@ func Authorize(next http.Handler) http.Handler {
 // Log input to STDIN
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%v => %v", r.URL.Path, "TODO")
+		log.Printf("%v", r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
-}
-
-// PrepareURL for parsing URL
-func PrepareURL(w http.ResponseWriter, r *http.Request) {
-	reg := regexp.MustCompile(`{.[^}]*}`)
-	matches := reg.FindAllString(i.From, -1)
-
-	final := i.To
-
-	for _, i := range matches {
-		final = strings.Replace(final, i, chi.URLParam(r, i[1:len(i)-1]), -1)
-	}
-
-	fmt.Println(final)
-	Redirect(w, r, final)
-}
-
-// Redirect user to specific service
-func Redirect(w http.ResponseWriter, r *http.Request, to string) {
-	nr, _ := http.NewRequest(r.Method, to, r.Body)
-	nr.Header = r.Header
-
-	mr, err := client.Do(nr)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		body, _ := ioutil.ReadAll(mr.Body)
-		for k, v := range mr.Header {
-			w.Header().Set(k, v[0])
-		}
-
-		w.Write(body)
-	}
 }

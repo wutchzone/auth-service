@@ -16,7 +16,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	u, errDecode := decodeUser(r)
 	if errDecode != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ := response.CreateResponse(w, response.ResponseError, nil, "")
+		response.CreateResponse(w, response.ResponseError, nil, "")
 		return
 	}
 
@@ -24,7 +24,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	cu, errSearch := UserDB.GetAccount(u.User)
 	if errSearch != nil || cu.ComparePswdAndHash((*u).Password) != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		_ := response.CreateResponse(w, response.ResponseError, nil, "password or username is not correct")
+		response.CreateResponse(w, response.ResponseError, nil, "password or username is not correct")
 		return
 	}
 
@@ -34,7 +34,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	dur := time.Minute * 20
 	if err := SessionDB.SetRecord(uid, *si, dur); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ := response.CreateResponse(w, response.ResponseError, nil, "unable to save token into session storage")
+		response.CreateResponse(w, response.ResponseError, nil, "unable to save token into session storage")
 		return
 	}
 
@@ -60,15 +60,15 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 	nu, errCreate := accountdb.NewUser(u.User, u.Password, u.Email, accountdb.DefaultUser)
 	if errCreate != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		response.CreateResponse(w, response.ResponseError, nil, errCreate)
+		response.CreateResponse(w, response.ResponseError, nil, errCreate.Error())
 		return
 	}
 
 	// Create new user
-	cu, errSave := UserDB.SaveUser(u)
-	if errCreate != nil {
+	errSave := UserDB.SaveUser(*nu)
+	if errSave != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		response.CreateResponse(w, response.ResponseError, nil, errSave)
+		response.CreateResponse(w, response.ResponseError, nil, errSave.Error())
 		return
 	}
 

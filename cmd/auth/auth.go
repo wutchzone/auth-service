@@ -35,7 +35,7 @@ func init() {
 	if udb := accountdb.GetInstance(accountdb.AccountConfiguration{
 		AccoutCollectionName:  "users",
 		ServiceCollectionName: "services",
-		Address:               Config.SessionDB.URL,
+		Address:               Config.AccessDB.URL,
 	}); udb == nil {
 		panic("Error connecting to the account & service DB")
 	} else {
@@ -57,11 +57,8 @@ func init() {
 	// Init SMTP
 	fmt.Println("SMTP not implemented")
 
-	ser, _ := decodeServices(rslt)
-	for _, i := range ser {
-		SessionDB.SetRecord(i.Name(), "service", 0)
-	}
-	fmt.Println(emoji.Sprint(":white_check_mark: Services loaded succesfully"))
+
+	//fmt.Println(emoji.Sprint(":white_check_mark: Services loaded succesfully"))
 
 	fmt.Println("Everything started!")
 }

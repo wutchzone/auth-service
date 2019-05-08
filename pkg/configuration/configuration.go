@@ -43,7 +43,6 @@ type DefaultUser struct {
 
 type Configuration struct {
 	DefaultPort int         `json:"default_port"` // Port where service will be listening
-	Routes      []Route     `json:"routes"`       // Routes definition
 	Roles       []Role      `json:"roles"`        // Roles definition
 	SessionDB   DB          `json:"sessiondb"`    // DB for storing sessiondb information (Only Redis is currently supported)
 	AccessDB    DB          `json:"accessdb"`     // Parameters for connecting to the DB where user data's are stored (Only MongoDB is currently supported)

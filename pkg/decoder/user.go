@@ -1,7 +1,7 @@
 package decoder
 
 type User struct {
-	User     string
-	Password string
-	Email    string
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
